@@ -55,8 +55,11 @@ app.post('/login', async (req, res) => {
         range: 'A:A', // Coluna A
     });
 
-    const rows = response.data.values;
-    const codigoValido = rows && rows.some(row => row[0] === codigoBarra);
+    const rows = response.data.values || []; // Certifique-se de que rows não é undefined
+    console.log('Códigos de barras encontrados na planilha:', rows); // Log para verificar os dados
+
+    // Verifica se o código de barras existe, removendo espaços
+    const codigoValido = rows.some(row => row[0].trim() === codigoBarra.trim());
 
     if (codigoValido) {
         // Armazena o código de barras na sessão
@@ -88,7 +91,7 @@ app.get('/buscar-colaborador', async (req, res) => {
         range: 'E:F', // Colunas a serem lidas
     });
 
-    const rows = response.data.values;
+    const rows = response.data.values || [];
     let colaboradorNome = '';
 
     if (rows.length) {
@@ -117,7 +120,7 @@ app.post('/solicitar-bh', async (req, res) => {
         range: 'E:F', // Colunas a serem lidas
     });
 
-    const verificaRows = verificaResponse.data.values;
+    const verificaRows = verificaResponse.data.values || [];
     let colaboradorNome = '';
     let matriculaValida = false;
 
@@ -141,7 +144,7 @@ app.post('/solicitar-bh', async (req, res) => {
         range: 'A:H', // Colunas a serem preenchidas
         valueInputOption: 'USER_ENTERED',
         resource: {
-            values: [[matricula, colaboradorNome, dataBH, horaInicio, horaFim, new Date().toLocaleDateString(), new Date().toLocaleTimeString(), codigoBarra]], // Usa o código de barras em vez de email
+            values: [[matricula, colaboradorNome, dataBH, horaInicio, horaFim, new Date().toLocaleDateString(), new Date().toLocaleTimeString(), codigoBarra]], // Usa o código de barras
         },
     }, (err, result) => {
         if (err) {
