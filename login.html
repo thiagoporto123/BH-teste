@@ -4,33 +4,77 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 300px;
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            text-align: left;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+    </style>
     <script>
         function autenticar() {
             // Aqui você pode adicionar a lógica de autenticação
-            // Simulação de autenticação bem-sucedida
             const usuarioValido = true; // Altere isso conforme sua lógica real
 
             if (usuarioValido) {
                 // Redireciona para index.html após autenticação
                 window.location.href = "index.html";
             } else {
-                alert("Usuário ou senha inválidos.");
+                alert("Usuário inválido.");
             }
         }
     </script>
 </head>
 <body>
-    <h1>Login</h1>
-    <form onsubmit="event.preventDefault(); autenticar();">
-        <div>
-            <label for="usuario">Usuário:</label>
-            <input type="text" id="usuario" required>
-        </div>
-        <div>
-            <label for="senha">Senha:</label>
-            <input type="password" id="senha" required>
-        </div>
-        <button type="submit">Entrar</button>
-    </form>
+    <div class="container">
+        <h1>Login</h1>
+        <form onsubmit="event.preventDefault(); autenticar();">
+            <div>
+                <label for="usuario">Usuário:</label>
+                <input type="text" id="usuario" required>
+            </div>
+            <button type="submit">Entrar</button>
+        </form>
+    </div>
 </body>
 </html>
