@@ -52,15 +52,24 @@
         }
     </style>
     <script>
-        function autenticar() {
-            // Aqui você pode adicionar a lógica de autenticação
-            const usuarioValido = true; // Altere isso conforme sua lógica real
+        async function autenticar() {
+            const codigoBarra = document.getElementById('codigoBarra').value;
 
-            if (usuarioValido) {
-                // Redireciona para index.html após autenticação
-                window.location.href = "index.html";
+            // Envia o código de barras para o servidor
+            const response = await fetch('/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ codigoBarra }),
+            });
+
+            if (response.redirected) {
+                // Se o login foi bem-sucedido, redireciona para a página principal
+                window.location.href = response.url;
             } else {
-                alert("Usuário inválido.");
+                const message = await response.text();
+                alert(message); // Exibe a mensagem de erro
             }
         }
     </script>
@@ -70,8 +79,8 @@
         <h1>Login</h1>
         <form onsubmit="event.preventDefault(); autenticar();">
             <div>
-                <label for="usuario">Usuário:</label>
-                <input type="text" id="usuario" required>
+                <label for="codigoBarra">Código de Barras:</label>
+                <input type="text" id="codigoBarra" required maxlength="14">
             </div>
             <button type="submit">Entrar</button>
         </form>
