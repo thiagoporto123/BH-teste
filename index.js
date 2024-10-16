@@ -42,24 +42,31 @@ app.get('/login', (req, res) => {
 });
 
 // Rota para processar o login
-app.post('/login', (req, res) => {
+app.post('/login', async (req, res) => {
     const { codigoBarra } = req.body;
-    // Aqui você deve implementar a lógica de validação do código de barras
-    if (validarCodigoBarra(codigoBarra)) {
+
+    // Conecta ao Google Sheets
+    const sheets = await getAuthenticatedSheetsClient();
+    const spreadsheetId = '1JRvyL6ULSpJpW7vww-eym0bsSk75DzHCzdy6dle5BpY'; // ID da sua planilha
+
+    // Busca todos os códigos de barras da coluna A
+    const response = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: 'A:A', // Coluna A
+    });
+
+    const rows = response.data.values;
+    const codigoValido = rows && rows.some(row => row[0] === codigoBarra);
+
+    if (codigoValido) {
         // Armazena o código de barras na sessão
         req.session.codigoBarra = codigoBarra; 
         // Redireciona para a página principal após login
         res.redirect('/');
     } else {
-        res.status(401).send('Código de barras inválido'); // Retorna erro se inválido
+        res.status(401).send('<script>alert("Acesso negado, código de barras não encontrado."); window.history.back();</script>');
     }
 });
-
-// Função para validar o código de barras
-function validarCodigoBarra(codigo) {
-    // Adicione sua lógica de validação aqui
-    return /^\d{14}$/.test(codigo); // Verifica se o código tem 14 dígitos
-}
 
 // Rota principal
 app.get('/', (req, res) => {
