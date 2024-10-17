@@ -36,11 +36,6 @@ function getAuthenticatedSheetsClient() {
     });
 }
 
-// Rota para a página de login
-app.get('/login', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'login.html'));
-});
-
 // Rota para processar o login
 app.post('/login', async (req, res) => {
     const { codigoBarra } = req.body;
@@ -49,25 +44,27 @@ app.post('/login', async (req, res) => {
     const sheets = await getAuthenticatedSheetsClient();
     const spreadsheetId = '1JRvyL6ULSpJpW7vww-eym0bsSk75DzHCzdy6dle5BpY'; // ID da sua planilha
 
-    // Busca todos os códigos de barras da coluna A
+    // Busca todos os códigos de barras da coluna A e os nomes da coluna C
     const response = await sheets.spreadsheets.values.get({
         spreadsheetId,
-        range: 'A:A', // Coluna A
+        range: 'A:C', // Colunas A (código de barras) e C (nomes)
     });
 
-    const rows = response.data.values || []; // Certifique-se de que rows não é undefined
-    console.log('Códigos de barras encontrados na planilha:', rows); // Log para verificar os dados
+    const rows = response.data.values || [];
+    console.log('Dados encontrados na planilha:', rows); // Log para verificar os dados
 
     // Verifica se o código de barras existe, removendo espaços
-    const codigoValido = rows.some(row => row[0].trim() === codigoBarra.trim());
+    const row = rows.find(row => row[0].trim() === codigoBarra.trim());
 
-    if (codigoValido) {
-        // Armazena o código de barras na sessão
-        req.session.codigoBarra = codigoBarra; 
-        // Redireciona para a página principal após login
-        res.redirect('/');
+    if (row) {
+        const colaboradorNome = row[2]; // Nome do colaborador na coluna C
+        // Armazena o código de barras e o nome na sessão
+        req.session.codigoBarra = codigoBarra;
+        req.session.colaboradorNome = colaboradorNome; 
+        // Retorna sucesso e nome do colaborador
+        res.json({ success: true, nome: colaboradorNome });
     } else {
-        res.status(401).send('<script>alert("Acesso negado, código de barras não encontrado."); window.history.back();</script>');
+        res.status(401).json({ success: false, message: "Código de barras não encontrado." });
     }
 });
 
@@ -78,82 +75,6 @@ app.get('/', (req, res) => {
         return res.redirect('/login'); // Redireciona para o login se não estiver logado
     }
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// Rota para buscar o colaborador
-app.get('/buscar-colaborador', async (req, res) => {
-    const { matricula } = req.query;
-    const sheets = await getAuthenticatedSheetsClient();
-    const spreadsheetId = '18IwIenWl-d8ckK8kD_Ck8lQTsZIFWQzwR4LRVVyTSCE'; // ID da planilha para buscar colaborador
-
-    const response = await sheets.spreadsheets.values.get({
-        spreadsheetId,
-        range: 'E:F', // Colunas a serem lidas
-    });
-
-    const rows = response.data.values || [];
-    let colaboradorNome = '';
-
-    if (rows.length) {
-        for (const row of rows) {
-            if (row[0] === matricula) {
-                colaboradorNome = row[1]; // Nome do colaborador na coluna F
-                break;
-            }
-        }
-    }
-
-    res.json({ nome: colaboradorNome });
-});
-
-// Rota para processar o formulário
-app.post('/solicitar-bh', async (req, res) => {
-    const { matricula, dataBH, horaInicio, horaFim } = req.body;
-    const codigoBarra = req.session.codigoBarra; // Pega o código de barras da sessão
-
-    const sheets = await getAuthenticatedSheetsClient();
-    const spreadsheetId = '1Iip-bR9Y18qy7zHdTjF7A5jmtmrwnag_46fzjwXoGTU'; // ID da sua planilha
-
-    // Verificar se a matrícula existe
-    const verificaResponse = await sheets.spreadsheets.values.get({
-        spreadsheetId: '18IwIenWl-d8ckK8kD_Ck8lQTsZIFWQzwR4LRVVyTSCE',
-        range: 'E:F', // Colunas a serem lidas
-    });
-
-    const verificaRows = verificaResponse.data.values || [];
-    let colaboradorNome = '';
-    let matriculaValida = false;
-
-    if (verificaRows.length) {
-        for (const row of verificaRows) {
-            if (row[0] === matricula) { // Verifica se a matrícula está na coluna E
-                matriculaValida = true;
-                colaboradorNome = row[1]; // Nome do colaborador na coluna F
-                break;
-            }
-        }
-    }
-
-    if (!matriculaValida) {
-        return res.send(`<script>alert('Matrícula inválida'); window.history.back();</script>`); // Pop-up para matrícula inválida
-    }
-
-    // Se a matrícula for válida, prossegue com o envio
-    await sheets.spreadsheets.values.append({
-        spreadsheetId,
-        range: 'A:H', // Colunas a serem preenchidas
-        valueInputOption: 'USER_ENTERED',
-        resource: {
-            values: [[matricula, colaboradorNome, dataBH, horaInicio, horaFim, new Date().toLocaleDateString(), new Date().toLocaleTimeString(), codigoBarra]], // Usa o código de barras
-        },
-    }, (err, result) => {
-        if (err) {
-            console.log(err);
-            res.send('Erro ao enviar dados!');
-        } else {
-            res.send('Solicitação enviada com sucesso!');
-        }
-    });
 });
 
 // Inicia o servidor
