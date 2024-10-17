@@ -45,12 +45,16 @@
             })
             .then(response => {
                 if (response.ok) {
-                    window.location.href = '/'; // Redireciona para a página principal
+                    return response.json(); // Parse JSON na resposta
                 } else {
-                    alert("Código de barras inválido.");
+                    throw new Error("Código de barras inválido.");
                 }
             })
-            .catch(error => console.error('Erro:', error));
+            .then(data => {
+                alert(`Bem-vindo, ${data.nome}!`); // Exibe o nome do colaborador
+                window.location.href = '/'; // Redireciona para a página principal
+            })
+            .catch(error => alert(error.message));
         }
     </script>
 </head>
