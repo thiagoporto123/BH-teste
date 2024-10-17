@@ -1,9 +1,9 @@
 const fs = require('fs');
 const express = require('express');
 const session = require('express-session');
-const { google } = require('googleapis');
 const bodyParser = require('body-parser');
 const path = require('path');
+const xlsx = require('xlsx'); // Importa a biblioteca xlsx
 
 const app = express();
 const port = 3000;
@@ -20,48 +20,29 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json()); // Adicionando suporte para JSON
 
-// Carrega as credenciais da API do Google
-const credentials = JSON.parse(fs.readFileSync('credentials.json'));
-const { client_secret, client_id, redirect_uris } = credentials.web;
-const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
-
-// Função para conectar ao Google Sheets
-function getAuthenticatedSheetsClient() {
-    return new Promise((resolve, reject) => {
-        fs.readFile('token.json', (err, token) => {
-            if (err) return getNewToken(oAuth2Client, resolve);
-            oAuth2Client.setCredentials(JSON.parse(token));
-            resolve(google.sheets({ version: 'v4', auth: oAuth2Client }));
-        });
-    });
+// Função para ler os dados da planilha Excel
+function lerPlanilha(caminho) {
+    const workbook = xlsx.readFile(caminho);
+    const sheetName = workbook.SheetNames[0]; // Assume que você quer ler a primeira planilha
+    const worksheet = workbook.Sheets[sheetName];
+    const data = xlsx.utils.sheet_to_json(worksheet, { header: 1 }); // Lê os dados como um array de arrays
+    return data;
 }
 
 // Rota para processar o login
 app.post('/login', async (req, res) => {
     const { codigoBarra } = req.body;
 
-    // Conecta ao Google Sheets
-    const sheets = await getAuthenticatedSheetsClient();
-    const spreadsheetId = '1JRvyL6ULSpJpW7vww-eym0bsSk75DzHCzdy6dle5BpY'; // ID da sua planilha
-
-    // Busca todos os códigos de barras da coluna A e os nomes da coluna C
-    const response = await sheets.spreadsheets.values.get({
-        spreadsheetId,
-        range: 'A:C', // Colunas A (código de barras) e C (nomes)
-    });
-
-    const rows = response.data.values || [];
-    console.log('Dados encontrados na planilha:', rows); // Log para verificar os dados
-
-    // Verifica se o código de barras existe, removendo espaços e convertendo para string
-    const row = rows.find(row => row[0].toString().trim() === codigoBarra.trim());
+    // Lê os dados da planilha local
+    const dadosPlanilha = lerPlanilha('Código de barras crachá.xlsx');
+    
+    // Busca o código de barras na planilha
+    const row = dadosPlanilha.find(row => row[0].toString().trim() === codigoBarra.trim());
 
     if (row) {
-        const colaboradorNome = row[2]; // Nome do colaborador na coluna C
-        // Armazena o código de barras e o nome na sessão
+        const colaboradorNome = row[2]; // Assume que o nome do colaborador está na coluna C (índice 2)
         req.session.codigoBarra = codigoBarra;
         req.session.colaboradorNome = colaboradorNome; 
-        // Retorna sucesso e nome do colaborador
         res.json({ success: true, nome: colaboradorNome });
     } else {
         res.status(401).json({ success: false, message: "Código de barras não encontrado." });
