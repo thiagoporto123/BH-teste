@@ -53,8 +53,8 @@ app.post('/login', async (req, res) => {
     const rows = response.data.values || [];
     console.log('Dados encontrados na planilha:', rows); // Log para verificar os dados
 
-    // Verifica se o código de barras existe, removendo espaços
-    const row = rows.find(row => row[0].trim() === codigoBarra.trim());
+    // Verifica se o código de barras existe, removendo espaços e convertendo para string
+    const row = rows.find(row => row[0].toString().trim() === codigoBarra.trim());
 
     if (row) {
         const colaboradorNome = row[2]; // Nome do colaborador na coluna C
